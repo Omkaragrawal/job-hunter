@@ -1,0 +1,8 @@
+{
+  "name": "job-hunter",
+  "version": "0.9.0",
+  "description": "Finds jobs, tailors your resume and cover letter for each one, fills applications in your browser, and submits only after you approve each job.",
+  "author": { "name": "Omkaragrawal" },
+  "homepage": "https://github.com/Omkaragrawal/job-hunter",
+  "keywords": ["jobs", "job-search", "resume", "applications", "browser"]
+}

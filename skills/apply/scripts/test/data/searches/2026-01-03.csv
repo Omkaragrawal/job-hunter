@@ -1,0 +1,5 @@
+site,query,url,pages_read,results_seen,kept,notes
+Naukri,node.js,https://x,1,12,0,"filters: Mumbai, remote, last 24h"
+Naukri,Python backend,https://x,1,0,0,
+JobLeads,feed,,,,,"blocked: ""Sign in to see jobs for you"""
+Weekday,feed,https://x,3,40,0,

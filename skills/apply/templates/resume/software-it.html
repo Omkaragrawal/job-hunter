@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- job-hunter resume template: Software / IT.
+     Setup replaces the sample person below with the user's own resume: edit text only, keep tags and CSS.
+     Page: A4 (change "size: A4" to "size: Letter" for US/Canada). Length: one page. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Resume</title>
+<style>
+  @page { size: A4; margin: 26pt 36pt 22pt 36pt; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif; font-size: 10.5pt; line-height: 1.25; color: #111; }
+  header { text-align: center; margin-bottom: 8pt; }
+  h1 { font-size: 18pt; letter-spacing: .5pt; }
+  .headline { font-size: 11pt; margin-top: 1pt; }
+  .contact { font-size: 9.5pt; margin-top: 3pt; }
+  .contact a { color: #1a4d8f; text-decoration: none; }
+  h2 { font-size: 11pt; text-transform: uppercase; letter-spacing: .6pt; color: #1a4d8f; border-bottom: 1px solid #1a4d8f; margin: 9pt 0 4pt; padding-bottom: 1pt; }
+  .item { margin-bottom: 6pt; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8pt; }
+  .role { font-weight: bold; }
+  .meta { font-size: 9.5pt; color: #444; }
+  ul { margin: 2pt 0 0 14pt; }
+  li { margin-bottom: 1.5pt; }
+  .skills p { margin-bottom: 2pt; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ALEX MORGAN</h1>
+  <p class="headline">Senior Software Engineer · Backend &amp; Cloud</p>
+  <p class="contact">Pune, India · +91 90000 00000 · <a href="mailto:alex.morgan@example.com">alex.morgan@example.com</a> · <a href="https://linkedin.com/in/example">linkedin.com/in/example</a> · <a href="https://github.com/example">github.com/example</a></p>
+</header>
+
+<h2>Summary</h2>
+<p>Backend engineer with 6 years building and running high-traffic web services in Java and TypeScript on AWS. Led a team of four, cut API latency by 40% and owned on-call for payment systems processing 2M transactions a month.</p>
+
+<h2>Technical Skills</h2>
+<div class="skills">
+  <p><b>Languages:</b> TypeScript, Java, Python, SQL</p>
+  <p><b>Frameworks:</b> Node.js, Spring Boot, React</p>
+  <p><b>Cloud &amp; DevOps:</b> AWS (ECS, Lambda, RDS, S3), Docker, Terraform, GitHub Actions</p>
+  <p><b>Data &amp; Messaging:</b> PostgreSQL, Redis, Kafka, Elasticsearch</p>
+</div>
+
+<h2>Experience</h2>
+<div class="item">
+  <div class="row"><span><span class="role">Senior Software Engineer</span>, Northwind Systems</span><span class="meta">Jan 2023 – Present · Pune</span></div>
+  <ul>
+    <li>Led a team of 4 engineers rebuilding the payments API; p95 latency fell from 480 ms to 290 ms.</li>
+    <li>Designed an event pipeline on Kafka handling 2M transactions per month with zero data loss.</li>
+    <li>Introduced contract testing and CI checks that cut production incidents by a third.</li>
+  </ul>
+</div>
+<div class="item">
+  <div class="row"><span><span class="role">Software Engineer</span>, Bluepeak Labs</span><span class="meta">Jul 2020 – Dec 2022 · Bengaluru</span></div>
+  <ul>
+    <li>Built customer-facing REST and GraphQL services used by 300K monthly users.</li>
+    <li>Moved three services from VMs to containers on ECS, saving 25% in hosting costs.</li>
+    <li>Mentored two interns, both now full-time engineers.</li>
+  </ul>
+</div>
+<div class="item">
+  <div class="row"><span><span class="role">Associate Engineer</span>, Crestline Technologies</span><span class="meta">Jun 2019 – Jun 2020 · Pune</span></div>
+  <ul>
+    <li>Maintained internal tooling in Java and wrote automated tests that raised coverage from 45% to 78%.</li>
+  </ul>
+</div>
+
+<h2>Projects</h2>
+<div class="item">
+  <div class="row"><span class="role">Open-source rate limiter</span><span class="meta">github.com/example/limiter</span></div>
+  <ul><li>Redis-backed rate limiting library for Node.js with 1,200 weekly downloads.</li></ul>
+</div>
+
+<h2>Education</h2>
+<div class="row"><span><b>B.E., Computer Engineering</b>, University of Pune</span><span class="meta">2019</span></div>
+
+<h2>Certifications</h2>
+<p>AWS Certified Solutions Architect – Associate (2024)</p>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- job-hunter cover letter template.
+     Setup fills the letterhead once (NAME, CONTACT LINE) from profile.md and saves it as base/cover-letter.html.
+     For each job, copy base/cover-letter.html into the job folder and replace the five placeholders in double braces.
+     Keep the body at 200 words or fewer. Page: A4 (use "size: Letter" for US/Canada). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cover Letter</title>
+<style>
+  @page { size: A4; margin: 48pt 54pt; }
+  * { margin: 0; padding: 0; }
+  body { font-family: Calibri, Carlito, "Segoe UI", Arial, sans-serif; font-size: 11pt; line-height: 1.4; color: #111; }
+  h1 { font-size: 15pt; text-align: center; letter-spacing: .5pt; }
+  .contact { text-align: center; font-size: 9.5pt; margin: 3pt 0 24pt; }
+  .contact a { color: #1a4d8f; text-decoration: none; }
+  p { margin-bottom: 10pt; text-align: left; }
+</style>
+</head>
+<body>
+<h1>NAME</h1>
+<p class="contact">CONTACT LINE</p>
+<p>{{date, e.g. 18 November 2026}}</p>
+<p>Dear {{hiring manager's name if the posting gives one, else "Hiring Team at <Company>"}},</p>
+<p>{{paragraph 1: the role, and why this company}}</p>
+<p>{{paragraph 2: two or three resume facts that match the posting's must-haves}}</p>
+<p>{{paragraph 3: short close}}</p>
+<p>Sincerely,<br>NAME</p>
+</body>
+</html>
