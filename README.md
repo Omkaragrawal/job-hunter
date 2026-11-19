@@ -7,7 +7,7 @@ A Claude plugin that does the busywork of applying for jobs, while you stay in c
 - **Fills in the application forms** in your browser and stops on the last page.
 - **Submits only when you say so**, job by job.
 
-Shared for friends and family. Version 0.9.0 (beta).
+Shared for friends and family. Version 0.9.1 (beta).
 
 ## What you need
 - **The Claude desktop app** on Windows or Mac, with a paid Claude plan (Pro, Max, Team or Enterprise). You use its **Code** tab.
@@ -23,7 +23,7 @@ Nothing else to install.
    /plugin marketplace add Omkaragrawal/job-hunter
    ```
    ```
-   /plugin install job-hunter@job-hunter
+   /plugin install job-hunter@omkaragrawal
    ```
 3. Start a new session so the plugin loads.
 
@@ -66,9 +66,9 @@ While a search runs:
 ## Updating
 New versions come out from time to time. To get the latest, type:
 ```
-/plugin marketplace update job-hunter
+/plugin marketplace update omkaragrawal
 ```
-Or open `/plugin`, go to **Marketplaces**, and turn on auto-update for job-hunter.
+Or open `/plugin`, go to **Marketplaces**, and turn on auto-update for omkaragrawal.
 
 ## If something goes wrong
 - **"Extension not connected":** open your browser, check the Claude extension is installed and signed in with the same Claude account, then run `/job-hunter:setup` again and choose to change the browser.
