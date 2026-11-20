@@ -51,6 +51,10 @@ Claude searches these every day (if you set up a daily run) and whenever you say
 ## Search queries
 Claude runs every query below on every site above, top to bottom. Sites marked "(feed)" are read in full once instead. Each extra query adds about one search per site.
 
+## Tracking
+Which job trackers Claude keeps in step with applications.csv: Job Toast, RoleCatcher, both, or none.
+- Job trackers: none
+
 ## Standard answers
 Claude adapts the wording to each job but never the facts.
 - Why are you looking for a new role?

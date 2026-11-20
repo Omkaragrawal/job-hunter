@@ -22,7 +22,11 @@ In DATA:
 - `applications.csv`: the queue and log, columns `date,company,title,url,site,status,folder,notes`. Status is one of `ready`, `needs-you`, `submitted`, `skipped`, `failed`. Use standard CSV quoting.
 - `restore.txt`: one line per site whose profile resume is swapped and not yet put back.
 - `searches/<YYYY-MM-DD>.csv`: one row per search actually run that day.
+- `candidates.csv`: every posting a search kept, saved the moment it's seen (`date,site,company,title,url,notes`). A candidate is done once `applications.csv` has a row for it. Leftovers are the next run's Round 0.
+- `trackers.csv` (only when profile.md turns trackers on): how each logged job is mirrored outside, with columns `url,jobtoast_id,jobtoast_status,rolecatcher_stage`. See "Tracking".
 - `jobs/<YYYY-MM-DD> <Company> - <Title>/`: one folder per job. Use only letters, digits, spaces, dots and hyphens in folder names.
+
+Scripts in `${CLAUDE_SKILL_DIR}/scripts/`: `coverage.ps1` / `coverage.sh` (search coverage), `trackers_check.ps1` / `trackers_check.sh` (tracker sync), `rolecatcher.js` (RoleCatcher board helper), and `test/run-tests.ps1` / `test/run-tests.sh` (their self-checks).
 
 Facts on an application come only from `profile.md`, `extra.md` and `base/resume.html`. Never invent skills, numbers, titles or employers, and never claim anything listed under "Apply for, but never claim" in `profile.md`.
 
@@ -84,40 +88,71 @@ Forms and apply chats ask things like years per skill, days in office, domain ye
 
 Salary: use profile.md's rules. For a job in another currency, convert at that day's exchange rate, yearly or monthly as the form asks, and note the rate in `answers.md`.
 
+## Tracking (optional, set in profile.md)
+profile.md's `- Job trackers:` line says which outside trackers to keep in step: Job Toast, RoleCatcher, both, or none. With none, skip this section and the tracker gate.
+
+`applications.csv` is the source of truth. Every time a row is written or its status changes (anything but `skipped`), mirror it the same day to each enabled tracker and update `trackers.csv`:
+
+| Log status | Job Toast (its connector's MCP tools) | RoleCatcher (app.rolecatcher.com/jobs, in the browser) |
+|---|---|---|
+| `ready`, `needs-you`, `failed` | `save_job` without `dateApplied`; the reason goes in `notes` | `Shortlisted` |
+| `submitted` | New: `save_job` with `dateApplied`. Already saved: `mark_applied` with its id | `Applied`, with Date Applied |
+| Later news from the user (reply, interview, rejection, offer) | `update_job_status`: `IN_CONTACT`, `INTERVIEW_1`-`3` (with `interviewDate`), `DENIED`, `HIRED` or `ARCHIVED` | Move the card: `Interview`, or edit the record |
+
+- **Job Toast:** find its tools with a ToolSearch for "save_job mark_applied". `save_job` takes company, position, url, location, workType, salary and notes. It dedupes by posting URL, so re-saving is safe. It returns an `id`; store it in `trackers.csv`, and tell the user what the response says about `descriptionSource` and `recoveryQueued`. If the tools are missing, tell the user to connect Job Toast under claude.ai Connectors, and skip it for this run.
+- **RoleCatcher has no API or import**, so use its web board. Open https://app.rolecatcher.com/jobs/ (My Jobs, Kanban view) in a tab, paste the whole of `${CLAUDE_SKILL_DIR}/scripts/rolecatcher.js` into `javascript_tool`, then call `await rcAdd({col, title, emp, loc, url, date: 'YYYY-MM-DD'})` for each job and `await rcCheck(title)` to confirm the saved date.
+  - Its date picker ignores typed dates (a typed one was saved as 1 Jan 2026), so `rcAdd` clicks the day in the real picker and refuses to save on a mismatch.
+  - Never add to "Applying": RoleCatcher stamps today as Date Applied there.
+  - To move an existing card (Shortlisted to Applied), open the record, press Edit, change the stage and pick Date Applied with the picker's calendar button.
+- **Tracker gate:** run the tracker check and fix every gap it lists until it prints `in sync`:
+  - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/scripts/trackers_check.ps1" -DataDir "<DATA>"`
+  - Mac: `sh "${CLAUDE_SKILL_DIR}/scripts/trackers_check.sh" "<DATA>"`
+
 ## Every run starts with
-1. Read config, then `profile.md`, `extra.md` and `applications.csv`.
+1. Read config, then `profile.md`, `extra.md`, `applications.csv` and `candidates.csv`.
 2. If a session has a connector (MCP tools) for one of the job sites, use it for that site instead of the browser. Check with a ToolSearch for the site's name.
 3. If `restore.txt` has lines, run **End** first to put the original resume back.
 
 ## Prepare
 Started by pasted links, "find jobs", or the daily run.
-1. **Find** (when no links were given). Runs tend to cut this step short: one search per site, a glance at the first few cards, a tab closed with "nothing relevant". So it is checked mechanically:
-   - **Search every pair.** Run every query in profile.md "Search queries", in order, on every site in "Job sites", in the browser where the user is signed in. Sites marked `feed` are personal lists: read the whole list once, logged as query `feed`.
-   - **Read every result.** Use the site's own filters where it has them: last 24 hours or newest first, the user's locations, their experience level. Read every results page until the results run out or are older than 24 hours. Where a site shows no dates, read the first 5 pages. Pull each page's whole list with `get_page_text` or `read_page`, not just the cards on screen. Open every posting whose title could fit, and judge it on the posting, never on the card.
-   - **Log every search before the next one.** Add a row to `searches/<YYYY-MM-DD>.csv` (header `site,query,url,pages_read,results_seen,kept,notes`; the site is its name from profile.md): the exact results URL, the pages and results you actually read, and how many you kept. If a site can't be searched, write a row with `results_seen` empty and notes starting `blocked:`, followed by the page's own words in quotes, e.g. `blocked: "Sign in to view more jobs"`. "Nothing relevant", "no results" or closing a tab without those numbers doesn't count.
-   - **Coverage gate.** Before moving on to Judge, run the coverage check:
-     - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/scripts/coverage.ps1" -DataDir "<DATA>"`
-     - Mac: `sh "${CLAUDE_SKILL_DIR}/scripts/coverage.sh" "<DATA>"`
 
-     It lists every site and query pair without a valid row. Run those searches and check again until it prints `complete`. Never call a site searched or empty unless its rows exist.
+**Search and apply as you go; never search everything first.** A run told to finish every search before opening any posting stopped three times with the searching unfinished and applied to nothing, although its first search had found 9 strong matches. So:
+- **Round 0, leftovers:** first, take every row in `candidates.csv` whose URL (or company and title, when the URL is blank) has no row in `applications.csv`, and run steps 2-5 on it.
+- **Round 1:** the higher-priority queries from profile.md's "Priority" line, plus the `feed` sites.
+- **Round 2:** the remaining queries.
+- **Within a round, one site at a time:** run that round's queries on the site (step 1), then straight away run steps 2-5 on everything kept from it, then move on to the next site.
+- **Keep going.** An unattended run doesn't stop between sites to report or ask. A site that throttles or blocks (a "Just a moment..." check, a sign-in wall) gets its `blocked:` row; move on and retry it once at the end of the run. If you truly must stop early, everything kept is already in `candidates.csv`, so the next run starts with it.
+
+1. **Search** (when no links were given). Runs also tend to cut searches short: one search per site, a glance at the first few cards, a tab closed with "nothing relevant". So searches are checked mechanically:
+   - **Search every pair.** Over the two rounds, run every query in profile.md "Search queries" on every site in "Job sites", in the browser where the user is signed in. Sites marked `feed` are personal lists: read the whole list once, logged as query `feed`.
+   - **Save every keeper at once.** As you read results, append each posting whose title could fit to `candidates.csv` (`date,site,company,title,url,notes`) before opening it. A job you saw is then never lost to a cut-short run.
+   - **Read the results.** Use the site's own filters where it has them: last 24 hours or newest first, the user's locations, their experience level. Sort by newest or relevance, and read at most 5 pages per search (relevance fades by page 5, and full reads took hours). Stop earlier when the results run out, are older than 24 hours, or a page is mostly unrelated roles; note why in `notes`. Pull each page's whole list with `get_page_text` or `read_page`, not just the cards on screen. Open every posting whose title could fit, and judge it on the posting, never on the card.
+   - **Log every search before the next one.** Add a row to `searches/<YYYY-MM-DD>.csv` (header `site,query,url,pages_read,results_seen,kept,notes`; the site is its name from profile.md): the exact results URL, the pages and results you actually read, and how many you kept. If a site can't be searched, write a row with `results_seen` empty and notes starting `blocked:`, followed by the page's own words in quotes, e.g. `blocked: "Sign in to view more jobs"`. "Nothing relevant", "no results" or closing a tab without those numbers doesn't count.
    - Skip a job when `applications.csv` already has a row with the same company and title whose status is not `skipped` or `failed`, or when the company is on the skip list.
-2. **Judge** every job (see above). Log each skip with its reason.
-3. **Build every package** before touching any form. Each apply or stretch job gets a folder with three things:
+2. **Judge** each kept job on its posting (see "Judging a job"). Log each skip with its reason.
+3. **Build its package** before touching its form. Each apply or stretch job gets a folder with three things:
    - **Resume:** copy `base/resume.html` into the folder and edit text only. Reword the summary; reorder, reword, swap or drop bullets and skills to match the posting, taking items from `extra.md` where they fit better. Keep the tags, CSS and bold lead-ins. Print it (see "Making a PDF") under the exact file name in profile.md "Resume file name". The page count must be within the template's limit, which is in its header comment (usually one page); if it's over, trim and print again.
    - **Cover letter:** copy `base/cover-letter.html`, replace the five placeholders in double braces (200 words or fewer, specific to the posting), and print it under profile.md's "Cover letter file name".
    - **`answers.md`:** every form value (contact details; salary under profile.md's rules, chosen by the job's city, currency and stated budget; notice period), the free-text answers, what changed from the base resume, what isn't claimed, open questions, and any ⚠ page instructions.
-4. **Open every application in its own tab, then fill them one after another:**
+4. **Open each application in its own tab and fill it:**
    - Buttons that only take you to the company's own form ("Apply on company site", "Apply on company website") are fine to click. Some job boards then count it as applied with the profile resume; note that in the row.
    - Attach the tailored resume **first** and let the form re-render. Resume parsers overwrite fields: wrong job titles, merged education, cleared emails and links. Then fill every field from `answers.md`.
    - Go through every Next or Continue page to the last page without stopping to ask. Re-read the whole form, fix anything that changed, and park on the last page with the tab open.
    - **Never click a button that sends the application:** the final Submit, Apply, Easy Apply or quick apply, Send, Finish, Done. If you're unsure whether a button sends, don't click it; hand it off.
    - Profile sites (job boards whose Apply uses the resume saved on the user's profile there, and one-click "fast apply" lists) have no form to fill. The package is enough; write `profile-site` in the notes.
    - Never type passwords or create accounts. Those are hand-offs.
-5. **Log** each row as `ready` (parked, or a profile site) or `needs-you` (with the hand-off).
-6. **Finish:** send a PushNotification with the counts. Then show:
-   - a per-site table from the search log: searches run, pages read, results seen, jobs kept, and blocked reasons in the page's own words;
-   - the review list (below), with stretch jobs in their own section;
-   - every open hand-off and question, in one numbered list.
+5. **Log** each row as `ready` (parked, or a profile site) or `needs-you` (with the hand-off), then mirror it to the enabled trackers (see "Tracking").
+6. **Finish**, once both rounds have gone through every site:
+   - **Coverage gate:** run the coverage check:
+     - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/scripts/coverage.ps1" -DataDir "<DATA>"`
+     - Mac: `sh "${CLAUDE_SKILL_DIR}/scripts/coverage.sh" "<DATA>"`
+
+     It lists every site and query pair without a valid row. Run those searches, process what they keep (steps 2-5), and check again until it prints `complete`. Never call a site searched or empty unless its rows exist. The gate decides when the run is done; it never holds up applying.
+   - **Tracker gate** (only if trackers are on): run the tracker check until it prints `in sync` (see "Tracking").
+   - Send a PushNotification with the counts. Then show:
+     - a per-site table from the search log: searches run, pages read, results seen, jobs kept, and blocked reasons in the page's own words;
+     - the review list (below), with stretch jobs in their own section;
+     - every open hand-off and question, in one numbered list.
 
 ## Review
 Started by "review my applications", or by the user replying in the run's session.
@@ -135,7 +170,7 @@ The user answers questions, asks for edits (rebuild that job's package and refil
 Then run **End**.
 
 ## End
-For each site in `restore.txt`, upload `base/original-resume.pdf` back as the profile resume, then delete that line. Tell the user what was put back.
+For each site in `restore.txt`, upload `base/original-resume.pdf` back as the profile resume, then delete that line. Tell the user what was put back. If trackers are on, mirror every status change from this session (see "Tracking") and run the tracker check until it prints `in sync`.
 
 ## Site notes (lessons from real runs)
 - **Naukri (India):**
@@ -149,6 +184,10 @@ For each site in `restore.txt`, upload `base/original-resume.pdf` back as the pr
 - **Weekday (India, tech):** the Fast Apply list sends the user's Weekday profile in one click, so treat it as a profile site and verify in Weekday's applied list.
 - **Sign-in needed:** LinkedIn, Wellfound, Instahyre and Cutshort show little or nothing until the user signs in to them in the browser. JobLeads' "for you" list, FoundRole's recommendations and MyGreenhouse are signed-in pages too. Say so in the summary instead of retrying.
 - **FoundRole:** the public list is mostly US jobs; use the signed-in recommendations page.
+- **Workopia:** if the session has its connector, search through the connector's `job_tool` instead of the browser. Find it with a ToolSearch for "workopia job_tool".
+  - Use `action: "search"`. `search_jobs` needs `city`, and takes `job_title`, `posted_within_days: 1`, `workMode` and `skills`.
+  - Run it once per query and per city from profile.md's locations (plus remote), and page with `action: "refine"` plus `exclude_ids`.
+  - If the tools are missing, use https://workopia.io/jobs in the browser and say so in the summary.
 - **Form quirks:**
   - SmartRecruiters hides its file input, so attaching the resume is a hand-off.
   - Zoho Recruit forms sit in an iframe: click and type.
