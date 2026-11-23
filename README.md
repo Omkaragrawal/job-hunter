@@ -66,11 +66,16 @@ While a search runs:
 - **Site rules:** some job sites, LinkedIn among them, don't allow automation tools. job-hunter works at a human pace, but use it at your own judgement.
 
 ## Updating
-New versions come out from time to time. To get the latest, type:
+New versions come out from time to time. To get the latest, type `/plugin`, go to **Marketplaces**, choose **omkaragrawal** and then **Update marketplace**. You can also turn on auto-update there.
+
+Or, in a terminal, run both of these:
 ```
-/plugin marketplace update omkaragrawal
+claude plugin marketplace update omkaragrawal
 ```
-Or open `/plugin`, go to **Marketplaces**, and turn on auto-update for omkaragrawal.
+```
+claude plugin update job-hunter@omkaragrawal
+```
+Start a new session afterwards. If the new version adds setup questions, run `/job-hunter:setup` again.
 
 ## If something goes wrong
 - **"Extension not connected":** open your browser, check the Claude extension is installed and signed in with the same Claude account, then run `/job-hunter:setup` again and choose to change the browser.
