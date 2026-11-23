@@ -3,7 +3,7 @@
 # Usage: sh trackers_check.sh <data folder>
 # Which trackers are on comes from profile.md's "- Job trackers: ..." line (Job Toast, RoleCatcher, both, or none).
 # Every applications.csv row that isn't "skipped" needs a trackers.csv row with the same url. With Job Toast on,
-# it needs a jobtoast_id. Each enabled tracker's status must match the log, or be a later stage after "submitted".
+# it needs a jobtoast_id. Each enabled tracker's status must match the log, or be a later stage when the log says "submitted" or "needs-you".
 # Prints "in sync" or "no trackers configured" (exit 0), or each gap (exit 1).
 # Plain POSIX sh + awk only, so it runs on a stock Mac.
 # shortcut: a CSV field with a line break inside quotes isn't supported; the skill writes every field on one line.
@@ -52,7 +52,7 @@ FILENAME == appsf {
   else if (st == "ready" || st == "needs-you" || st == "failed") { wj = "SAVED"; wr = "Shortlisted" }
   else next
   ok = (!jt || tjs[u] == wj) && (!rc || trs[u] == wr)
-  moved = (st == "submitted") && ((jt && tjs[u] ~ /^(IN_CONTACT|INTERVIEW_1|INTERVIEW_2|INTERVIEW_3|HIRED|DENIED|ARCHIVED)$/) || (!jt && trs[u] ~ /^(Interview|Offer)$/))
+  moved = (st == "submitted" || st == "needs-you") && ((jt && tjs[u] ~ /^(IN_CONTACT|INTERVIEW_1|INTERVIEW_2|INTERVIEW_3|HIRED|DENIED|ARCHIVED)$/) || (!jt && trs[u] ~ /^(Interview|Offer)$/))
   if (!ok && !moved) out[++g] = "stale: " name ": log says " st ", trackers say " tjs[u] "/" trs[u] ", want " wj "/" wr
 }
 END {

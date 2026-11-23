@@ -33,13 +33,17 @@ Claude puts only what is written here, in extra.md and in base/resume.html on yo
 - Skills and tools to apply for even if they're not on your resume (optional):
 - Apply for, but never claim (optional; skills you'll apply for but must never appear on your resume, letters or answers):
 - Stretch rule (which near-misses go on a "stretch" list instead of being skipped; default: about 3 years short, or one missing skill):
+- Experience range (optional; years below and above yours that still count as a match, e.g. "2 below, 3 above". Anything outside it is skipped. Blank = the stretch rule decides):
+- Learned but not used at work (optional; never claimed as experience, and answered as "learned, no production experience" if asked):
 - Minimum salary:
+- Paused kinds of jobs (optional; skipped until you clear this line):
 - Deal-breakers (skip these jobs):
 - Companies to skip:
 
 ## Files
 - Resume file name (what recruiters see, e.g. "Firstname Lastname - Resume.pdf"):
 - Cover letter file name (e.g. "Cover Letter - Firstname Lastname.pdf"):
+- Resume per job (tailored = a new resume and cover letter for every job, base = your own resume as it is): tailored
 - Page size (A4, or Letter for US/Canada):
 - Resume template (which standard template, or "own design"):
 - Original resume (the file on your job-site profiles today; it goes back on them after a tailored resume is swapped in): base/original-resume.pdf
@@ -49,7 +53,7 @@ Claude searches these every day (if you set up a daily run) and whenever you say
 - Your other sites: none yet (add each as its own "- Name: https://..." line above; add "(feed)" if it's a personal list with no search box)
 
 ## Search queries
-Claude runs every query below on every site above, top to bottom. Sites marked "(feed)" are read in full once instead. Each extra query adds about one search per site.
+Claude runs every query below on every site above, top to bottom. Sites marked "(feed)" are read in full once instead. Each extra query adds about one search per site. To pause a query, write it in parentheses without the dash, e.g. (Python backend).
 
 ## Tracking
 Which job trackers Claude keeps in step with applications.csv: Job Toast, RoleCatcher, both, or none.

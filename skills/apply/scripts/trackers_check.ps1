@@ -2,7 +2,7 @@
 # Usage: powershell -NoProfile -ExecutionPolicy Bypass -File trackers_check.ps1 -DataDir <data folder>
 # Which trackers are on comes from profile.md's "- Job trackers: ..." line (Job Toast, RoleCatcher, both, or none).
 # Every applications.csv row that isn't "skipped" needs a trackers.csv row with the same url. With Job Toast on,
-# it needs a jobtoast_id. Each enabled tracker's status must match the log, or be a later stage after "submitted".
+# it needs a jobtoast_id. Each enabled tracker's status must match the log, or be a later stage when the log says "submitted" or "needs-you".
 # Prints "in sync" or "no trackers configured" (exit 0), or each gap (exit 1).
 param([Parameter(Mandatory)][string]$DataDir)
 $ErrorActionPreference = 'Stop'
@@ -29,7 +29,7 @@ $gaps = @(foreach ($a in $apps) {
   $w = $expect[$a.status]
   if ($w) {
     $ok = ((-not $jt) -or $t.jobtoast_status -ceq $w[0]) -and ((-not $rc) -or $t.rolecatcher_stage -ceq $w[1])
-    $moved = $a.status -eq 'submitted' -and (($jt -and $laterJt -ccontains $t.jobtoast_status) -or ((-not $jt) -and $laterRc -ccontains $t.rolecatcher_stage))
+    $moved = $a.status -in 'submitted', 'needs-you' -and (($jt -and $laterJt -ccontains $t.jobtoast_status) -or ((-not $jt) -and $laterRc -ccontains $t.rolecatcher_stage))
     if (-not $ok -and -not $moved) { "stale: ${name}: log says $($a.status), trackers say $($t.jobtoast_status)/$($t.rolecatcher_stage), want $($w[0])/$($w[1])" }
   }
 })

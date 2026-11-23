@@ -26,9 +26,9 @@ In DATA:
 - `trackers.csv` (only when profile.md turns trackers on): how each logged job is mirrored outside, with columns `url,jobtoast_id,jobtoast_status,rolecatcher_stage`. See "Tracking".
 - `jobs/<YYYY-MM-DD> <Company> - <Title>/`: one folder per job. Use only letters, digits, spaces, dots and hyphens in folder names.
 
-Scripts in `${CLAUDE_SKILL_DIR}/scripts/`: `coverage.ps1` / `coverage.sh` (search coverage), `trackers_check.ps1` / `trackers_check.sh` (tracker sync), `rolecatcher.js` (RoleCatcher board helper), and `test/run-tests.ps1` / `test/run-tests.sh` (their self-checks).
+Scripts in `${CLAUDE_SKILL_DIR}/scripts/`: `coverage.ps1` / `coverage.sh` (search coverage), `trackers_check.ps1` / `trackers_check.sh` (tracker sync), `keep_going.ps1` / `keep_going.sh` (the opt-in keep-going check, see "Keep going"), `rolecatcher.js` (RoleCatcher board helper), and `test/run-tests.ps1` / `test/run-tests.sh` (their self-checks).
 
-Facts on an application come only from `profile.md`, `extra.md` and `base/resume.html`. Never invent skills, numbers, titles or employers, and never claim anything listed under "Apply for, but never claim" in `profile.md`.
+Facts on an application come only from `profile.md`, `extra.md` and `base/resume.html`. Never invent skills, numbers, titles or employers, and never claim anything listed under "Apply for, but never claim" in `profile.md`. A skill under "Learned but not used at work" is never claimed as experience; if a form or chat asks about it, say "learned, no production experience".
 
 ## Making a PDF
 Print HTML with the `pdf_browser` from config in headless mode, using a separate throwaway profile so the user's open browser isn't disturbed. Then count the pages.
@@ -52,7 +52,9 @@ The last line prints the page count. If it can't be read, open the PDF with the 
 Every job gets one of three verdicts:
 - **Apply:** it fits the target roles in profile.md. A target-role title counts even when the description leans elsewhere. Skills on profile.md's "apply for" list count as a match even when they aren't on the resume.
 - **Stretch:** a near miss under profile.md's stretch rule (by default about 3 years short on experience, or one missing skill). Prepare and fill it like any other job, put `stretch: <the gap>` in the notes, and list it in its own section in review. Never skip a near miss silently.
-- **Skip:** a deal-breaker from profile.md, or clearly a different kind of job from the target roles. Log the reason, quoting the posting's requirement.
+- **Skip:** a deal-breaker or a paused kind of job from profile.md, or clearly a different kind of job from the target roles. Log the reason, quoting the posting's requirement.
+
+**Years:** if profile.md sets an "Experience range" (e.g. 2 below, 3 above), it decides the years part on its own. A posting whose required years overlap that range around the user's years passes; one outside it is a skip, not a stretch. If the line is blank, the stretch rule decides.
 
 When a company has an apply or stretch job, open that company's careers page and judge every other opening there too.
 
@@ -112,6 +114,7 @@ profile.md's `- Job trackers:` line says which outside trackers to keep in step:
 1. Read config, then `profile.md`, `extra.md`, `applications.csv` and `candidates.csv`.
 2. If a session has a connector (MCP tools) for one of the job sites, use it for that site instead of the browser. Check with a ToolSearch for the site's name.
 3. If `restore.txt` has lines, run **End** first to put the original resume back.
+4. If `DATA/.claude/keep-going/` exists, the keep-going check is on: copy this OS's `keep_going`, `coverage` and `trackers_check` scripts from `${CLAUDE_SKILL_DIR}/scripts/` over the copies there, so plugin updates reach it.
 
 ## Prepare
 Started by pasted links, "find jobs", or the daily run.
@@ -121,22 +124,26 @@ Started by pasted links, "find jobs", or the daily run.
 - **Round 1:** the higher-priority queries from profile.md's "Priority" line, plus the `feed` sites.
 - **Round 2:** the remaining queries.
 - **Within a round, one site at a time:** run that round's queries on the site (step 1), then straight away run steps 2-5 on everything kept from it, then move on to the next site.
-- **Keep going.** An unattended run doesn't stop between sites to report or ask. A site that throttles or blocks (a "Just a moment..." check, a sign-in wall) gets its `blocked:` row; move on and retry it once at the end of the run. If you truly must stop early, everything kept is already in `candidates.csv`, so the next run starts with it.
+- **Keep going.** An unattended run doesn't stop between sites to report or ask. A site that throttles or blocks (a "Just a moment..." check, a sign-in wall) gets its `blocked:` row; move on and retry it once at the end of the run. Progress is one line in chat between tool calls, never a closing report, and never "say continue": the user may answer nothing for hours. If you truly must stop early, everything kept is already in `candidates.csv`, so the next run starts with it. If the user turned the keep-going check on, it refuses to end a daily run while searches, leftovers or tracker gaps remain. When it does, carry on with what it lists, and never log rows you didn't do to get past it. A plain "stop" or "pause" from the user always ends the run.
 
 1. **Search** (when no links were given). Runs also tend to cut searches short: one search per site, a glance at the first few cards, a tab closed with "nothing relevant". So searches are checked mechanically:
-   - **Search every pair.** Over the two rounds, run every query in profile.md "Search queries" on every site in "Job sites", in the browser where the user is signed in. Sites marked `feed` are personal lists: read the whole list once, logged as query `feed`.
+   - **Search every pair.** Over the two rounds, run every query in profile.md "Search queries" on every site in "Job sites", in the browser where the user is signed in. A query written in parentheses instead of after a dash is paused: don't run it (the coverage check ignores it too). Sites marked `feed` are personal lists: read the whole list once, logged as query `feed`.
    - **Save every keeper at once.** As you read results, append each posting whose title could fit to `candidates.csv` (`date,site,company,title,url,notes`) before opening it. A job you saw is then never lost to a cut-short run.
    - **Read the results.** Use the site's own filters where it has them: last 24 hours or newest first, the user's locations, their experience level. Sort by newest or relevance, and read at most 5 pages per search (relevance fades by page 5, and full reads took hours). Stop earlier when the results run out, are older than 24 hours, or a page is mostly unrelated roles; note why in `notes`. Pull each page's whole list with `get_page_text` or `read_page`, not just the cards on screen. Open every posting whose title could fit, and judge it on the posting, never on the card.
    - **Log every search before the next one.** Add a row to `searches/<YYYY-MM-DD>.csv` (header `site,query,url,pages_read,results_seen,kept,notes`; the site is its name from profile.md): the exact results URL, the pages and results you actually read, and how many you kept. If a site can't be searched, write a row with `results_seen` empty and notes starting `blocked:`, followed by the page's own words in quotes, e.g. `blocked: "Sign in to view more jobs"`. "Nothing relevant", "no results" or closing a tab without those numbers doesn't count.
    - Skip a job when `applications.csv` already has a row with the same company and title whose status is not `skipped` or `failed`, or when the company is on the skip list.
 2. **Judge** each kept job on its posting (see "Judging a job"). Log each skip with its reason.
-3. **Build its package** before touching its form. Each apply or stretch job gets a folder with three things:
+3. **Build its package** before touching its form. profile.md's "Resume per job" line decides what goes in; blank means `tailored`.
+   - `tailored`: the job's folder gets all three things below.
+   - `base`: copy `base/original-resume.pdf` into the folder under profile.md's "Resume file name" (recruiters see that name), and write `answers.md`. Write a cover letter only when the form requires one.
+
+   Either way, never skip, delay or hand off an application because a tailored resume or cover letter is missing: use the base resume. Note in the row which resume went in.
    - **Resume:** copy `base/resume.html` into the folder and edit text only. Reword the summary; reorder, reword, swap or drop bullets and skills to match the posting, taking items from `extra.md` where they fit better. Keep the tags, CSS and bold lead-ins. Print it (see "Making a PDF") under the exact file name in profile.md "Resume file name". The page count must be within the template's limit, which is in its header comment (usually one page); if it's over, trim and print again.
    - **Cover letter:** copy `base/cover-letter.html`, replace the five placeholders in double braces (200 words or fewer, specific to the posting), and print it under profile.md's "Cover letter file name".
    - **`answers.md`:** every form value (contact details; salary under profile.md's rules, chosen by the job's city, currency and stated budget; notice period), the free-text answers, what changed from the base resume, what isn't claimed, open questions, and any ⚠ page instructions.
 4. **Open each application in its own tab and fill it:**
    - Buttons that only take you to the company's own form ("Apply on company site", "Apply on company website") are fine to click. Some job boards then count it as applied with the profile resume; note that in the row.
-   - Attach the tailored resume **first** and let the form re-render. Resume parsers overwrite fields: wrong job titles, merged education, cleared emails and links. Then fill every field from `answers.md`.
+   - Attach the resume from the job's folder **first** and let the form re-render. Resume parsers overwrite fields: wrong job titles, merged education, cleared emails and links. Then fill every field from `answers.md`.
    - Go through every Next or Continue page to the last page without stopping to ask. Re-read the whole form, fix anything that changed, and park on the last page with the tab open.
    - **Never click a button that sends the application:** the final Submit, Apply, Easy Apply or quick apply, Send, Finish, Done. If you're unsure whether a button sends, don't click it; hand it off.
    - Profile sites (job boards whose Apply uses the resume saved on the user's profile there, and one-click "fast apply" lists) have no form to fill. The package is enough; write `profile-site` in the notes.
@@ -156,12 +163,12 @@ Started by pasted links, "find jobs", or the daily run.
 
 ## Review
 Started by "review my applications", or by the user replying in the run's session.
-List every `ready` and `needs-you` row, numbered, with: title, company, site, link, tab, the tailored PDF's path, what changed from the base, the cover letter, free-text answers, open questions and ⚠ page instructions. Stretch jobs go in their own section.
+List every `ready` and `needs-you` row, numbered, with: title, company, site, link, tab, which resume it uses (its path, and what changed if tailored), the cover letter if there is one, free-text answers, open questions and ⚠ page instructions. Stretch jobs go in their own section.
 
 The user answers questions, asks for edits (rebuild that job's package and refill its form), or approves by number: "submit 1, 3", or "submit all listed" for exactly the jobs just shown. Submit only jobs approved this way, and work through them without stopping. Anything that blocks becomes a hand-off line, and you move on:
 - **Parked tab still on its filled last page:** check the fields match `answers.md`, click submit, then verify (below) and log `submitted`.
 - **Tab expired, closed or out of reach:** open the link again and fill it from `answers.md`. If the form now asks anything that isn't in `answers.md`, hand it off and don't submit. Otherwise submit, verify and log `submitted`.
-- **Profile site:** add the site to `restore.txt`, upload the tailored PDF as the profile resume, untick any "Follow <Company>" box (often ticked by default), apply, answer its screening questions (see above), then verify and log `submitted`. A profile holds only one resume, so do a site's profile jobs one at a time. While one waits on the user, leave its resume on the profile, carry on with other sites, and do that site's next job after "done".
+- **Profile site:** if the job has a tailored PDF, add the site to `restore.txt` and upload it as the profile resume; with the base resume, skip that swap. Then untick any "Follow <Company>" box (often ticked by default), apply, answer its screening questions (see above), then verify and log `submitted`. A profile holds only one resume, so do a site's profile jobs one at a time. While one waits on the user, leave its resume on the profile, carry on with other sites, and do that site's next job after "done".
 - **Verify before logging `submitted`.** A confirmation screen isn't proof. Use the site's applied list where there is one (see Site notes), or its success message. If the user says an apply failed, check the list instead of arguing; if it's missing, apply again.
 - **Consent or declaration checkboxes** are the user's to tick: hand them off.
 - **The user submitted it themselves:** log `submitted` and note "submitted by the user".

@@ -10,3 +10,4 @@
 ## Search queries
 - Node.js
 - Python backend
+(Rust: paused, so no search is expected for it)

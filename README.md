@@ -3,11 +3,11 @@
 A Claude plugin that does the busywork of applying for jobs, while you stay in charge.
 
 - **Finds jobs** on the job sites you choose, every day if you like.
-- **Tailors your resume and cover letter** for each job, using only facts from your own resume.
+- **Tailors your resume and cover letter** for each job, using only facts from your own resume. Or it uses your resume as it is, if you prefer.
 - **Fills in the application forms** in your browser and stops on the last page.
 - **Submits only when you say so**, job by job.
 
-Shared for friends and family. Version 0.9.2 (beta).
+Shared for friends and family. Version 0.9.3 (beta).
 
 ## What you need
 - **The Claude desktop app** on Windows or Mac, with a paid Claude plan (Pro, Max, Team or Enterprise). You use its **Code** tab.
@@ -38,6 +38,7 @@ Claude asks you a few questions, reads your resume and sets everything up:
 - your resume layout: a standard template for your field, or your own design;
 - your job sites and search terms;
 - an optional daily search, at a time you choose, using the Claude model you choose;
+- an optional keep-going check, off unless you ask for it, that stops the daily search from ending early. Type `stop` or `pause` to end a run;
 - optional tracking: every application can also be kept in step with Job Toast or RoleCatcher, if you use them.
 
 You can run setup again any time to change something.

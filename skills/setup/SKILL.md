@@ -10,7 +10,7 @@ The person may not be technical. Talk in plain language, one step at a time. Use
 **Plugin files:** templates are in `${CLAUDE_PLUGIN_ROOT}/skills/apply/templates/` and site presets in `${CLAUDE_PLUGIN_ROOT}/skills/apply/presets/sites.md`.
 **Settings:** `~/.claude/job-hunter/config.json` (on Windows `~` is the home folder, e.g. `C:\Users\<name>`).
 
-**Running setup again:** if config.json exists, read it and the profile, show what's set up, and ask which part to change (browser, data folder, resume, sites and queries, daily run, everything). Then do only those steps, and never overwrite the profile without asking.
+**Running setup again:** if config.json exists, read it and the profile, show what's set up, and ask which part to change (browser, data folder, resume, sites and queries, daily run, everything). Then do only those steps, and never overwrite the profile without asking. Add any line that `templates/profile.md` has and their profile lacks, with its default or blank, and ask about the new ones.
 
 ## 1. Computer and browser
 1. Find the OS: run `uname -s` in Bash (`Darwin` = Mac). If that fails, or the shell is PowerShell, it's Windows.
@@ -80,12 +80,14 @@ Draft every answer from the resume, and let them confirm or correct it. Ask in s
    - currency and format (e.g. "INR lakhs per year").
 
    Any of these can be left blank: then a form that requires it becomes a hand-off.
-6. **Limits:** deal-breakers and companies to skip.
+6. **Limits:** deal-breakers, companies to skip, and any kinds of jobs to pause for now (skipped until they clear the line).
 7. **Optional skills rules:**
    - years per skill, and how to write them in free-text boxes;
    - skills to apply for even though they aren't on the resume;
    - "apply for, but never claim" skills;
-   - the stretch rule (default: about 3 years short, or one missing skill).
+   - skills they've learned but not used at work (mentioned only as "learned, no production experience");
+   - the stretch rule (default: about 3 years short, or one missing skill);
+   - an experience range, e.g. "2 below, 3 above" their own years; anything outside it is skipped. Blank leaves it to the stretch rule.
 8. **Standard answers:** draft "why are you looking", "tell us about yourself" and "biggest achievement" from the resume, using only its facts. They approve or edit each one.
 9. **Other answers:**
    - AI tools they use at work;
@@ -111,6 +113,11 @@ Then:
 - Set `@page` to `size: Letter` for the US and Canada, A4 elsewhere.
 - Print it (apply skill, "Making a PDF") and check the page count: one page for the field and fresher templates, two at most for executive, any for academic, and their original's count for their own design. Send them the PDF (SendUserFile if available, otherwise give the path) and adjust until they're happy.
 - Copy `templates/cover-letter.html` to `base/cover-letter.html`, and fill NAME and CONTACT LINE (both places), plus the page size.
+- Ask what goes into each application, and write it on profile.md's "Resume per job" line:
+  - `tailored` (Recommended): a new resume and cover letter for every job. Slower, and it uses more of their plan.
+  - `base`: their own resume as it is, and a cover letter only where a form requires one. Needs `base/original-resume.pdf` to exist.
+
+  Either way, a missing tailored resume or letter never holds up an application.
 - Fill profile.md's "Files" section: resume file name (suggest "Firstname Lastname - Resume.pdf", or their current file's name), cover letter file name, page size, template, and `base/original-resume.pdf`.
 
 ## 6. Job sites and search queries
@@ -128,6 +135,7 @@ Ask:
   - Opus: most thorough, uses more of their plan;
   - Haiku: cheapest, more likely to cut corners;
   - the app's default.
+- **Keep-going check (off by default):** runs sometimes stop early and wait for "continue". This check makes the daily run carry on until its searches, saved matches and trackers are done. Say plainly that it's new, makes runs longer, and uses more of their plan. They can always end a run by typing "stop" or "pause", or with the app's stop button.
 
 If they want a daily run:
 1. Load the tool with `ToolSearch` (`select:mcp__scheduled-tasks__create_scheduled_task`). If it isn't available (they're not in the Claude desktop app), say they can run it any time by typing "find jobs", and skip the rest.
@@ -140,7 +148,20 @@ If they want a daily run:
 4. Tell them:
    - the Claude app must be open at that time, otherwise the run starts when they next open it;
    - open the task under **Scheduled** and click **Run now** once, to approve the tools it needs, so later runs don't stop on permission prompts;
-   - if the run's session shows a different model, set the model in the task's settings in the app.
+   - if the run's session shows a different model, set the model under the task's **Edit**.
+5. **Only if they turned the keep-going check on:**
+   - Copy `keep_going`, `coverage` and `trackers_check` for their OS (`.ps1` on Windows, `.sh` on Mac) from `${CLAUDE_PLUGIN_ROOT}/skills/apply/scripts/` to `<data folder>/.claude/keep-going/`.
+   - Add a Stop hook to `<data folder>/.claude/settings.json`. Create the file if it's missing; if it exists, add to it and keep everything else. Write the data folder's full path, with backslashes doubled on Windows.
+     - Windows:
+       ```json
+       {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "powershell", "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<data folder>\\.claude\\keep-going\\keep_going.ps1", "-DataDir", "<data folder>"], "timeout": 30, "statusMessage": "Checking whether the job run is finished"}]}]}}
+       ```
+     - Mac:
+       ```json
+       {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "sh", "args": ["<data folder>/.claude/keep-going/keep_going.sh", "<data folder>"], "timeout": 30, "statusMessage": "Checking whether the job run is finished"}]}]}}
+       ```
+   - Tell them to open the task under **Scheduled**, click **Edit** and set its folder to the data folder, and to trust that folder if asked. The check only works in sessions that run in that folder.
+   - To turn it off later, remove that Stop hook and delete `<data folder>/.claude/keep-going/`.
 
 Daily task prompt:
 ```
@@ -149,7 +170,7 @@ Daily job run. Use the job-hunter "apply" skill (/job-hunter:apply) and follow i
 1. Run the skill's "Every run starts with" steps and set up the anchor tab.
 2. Round 0: judge, build and fill every leftover in candidates.csv that has no row in applications.csv yet.
 3. Round 1 (the higher-priority queries from profile.md and the feed sites), then Round 2 (the rest), one site at a time. Search the site with that round's queries (at most 5 pages per search), saving every keeper to candidates.csv as you see it and logging each search. Then straight away judge each keeper on its posting, check the company's other openings, build the package, open the application in its own browser tab and fill it to its last page. Only then move to the next site. Never search everything before applying.
-4. Never stop for one job or one site. Whatever needs the user becomes a one-line "⏸" hand-off in chat; mark that job needs-you and carry on. A throttled or blocked site gets its "blocked:" row and one retry at the end. Pick up the user's "done N" messages as they arrive. Don't stop to report between sites.
+4. Never stop for one job or one site. Whatever needs the user becomes a one-line "⏸" hand-off in chat; mark that job needs-you and carry on. A throttled or blocked site gets its "blocked:" row and one retry at the end. Pick up the user's "done N" messages as they arrive. Don't stop to report between sites: progress is one line between tool calls, never a closing report and never "say continue".
 5. If profile.md turns trackers on, mirror every logged job as the skill's "Tracking" section says.
 6. Finish only after both rounds: run the coverage check and fill any gaps it lists, then (if trackers are on) the tracker check until it prints "in sync".
 7. Do NOT submit anything in this run. Submitting needs the user's yes for each job, which they give later by replying in this session ("submit 1, 3") or in a review session.
